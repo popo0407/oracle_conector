@@ -58,11 +58,32 @@ ORACLE_CONECTER/
 │   ├── sql_validator.py         # SQL バリデーション
 │   ├── requirements.txt
 │   ├── .env.example
-│   └── onprem-sql-bridge.service  # systemd ユニットファイル
+│   ├── requirements.txt
+│   └── onprem_sql_bridge.log  # ランタイムログ
+│
+├── scripts/                     # サービス登録スクリプト
+│   ├── register-service-windows.ps1  # Windows (PowerShell)
+│   └── register-service-linux.sh     # Linux/macOS (Bash)
 │
 └── docs/
-    └── retrospective.md
+    ├── deployment-guide.md      # 本番デプロイメントガイド
+    ├── e2e-test-results.md     # E2E テスト結果
+    └── retrospective.md         # プロジェクト振り返り
 ```
+
+---
+
+## 📋 本番デプロイメントガイド
+
+詳細な本番デプロイメント手順は [**docs/deployment-guide.md**](docs/deployment-guide.md) を参照してください。
+
+| 項目                         | ドキュメント                                                                 |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| **フルセットアップ手順**     | [deployment-guide.md](docs/deployment-guide.md)                              |
+| **Windows サービス登録**     | [scripts/register-service-windows.ps1](scripts/register-service-windows.ps1) |
+| **Linux/macOS サービス登録** | [scripts/register-service-linux.sh](scripts/register-service-linux.sh)       |
+| **E2E テスト結果**           | [docs/e2e-test-results.md](docs/e2e-test-results.md)                         |
+| **プロジェクト振り返り**     | [docs/retrospective.md](docs/retrospective.md)                               |
 
 ---
 

@@ -11,6 +11,7 @@ MOCK_MODE=true の状態でシステム全体の SQS → オンプレエージ�
 ### 1. エージェント起動
 
 `.env` ファイルに CDK デプロイ値を設定：
+
 ```env
 ROLE_ARN=arn:aws:iam::590184009554:role/OnPremSqlBridgeRole
 REQUEST_QUEUE_URL=https://sqs.ap-northeast-1.amazonaws.com/590184009554/onprem-sql-request
@@ -26,6 +27,7 @@ ALLOWED_APP_IDS=app1,app2,app3
 ### 2. メッセージ送信
 
 Python スクリプトで SQS にリクエストを送信：
+
 ```python
 import json
 import boto3
@@ -45,13 +47,15 @@ response = client.send_message(
 )
 ```
 
-**結果**：  
+**結果**：
+
 - MessageId: `39d0e9c9-6185-426c-b27d-da47bf4b2796`
 - MD5OfMessageBody: `b83a18289e035ccf659bbdb56c2bd06a`
 
 ### 3. 処理実行
 
 ログで以下の処理を確認：
+
 ```
 2026-02-22 00:27:27,696 [INFO] __main__ - [test-9e68af4f] メッセージ処理開始
 2026-02-22 00:27:27,697 [INFO] mock_oracle - [MOCK] Oracle 接続、DSN=ORCL_PROD
@@ -64,6 +68,7 @@ response = client.send_message(
 ### 4. 結果確認
 
 S3 に保存されたファイル：
+
 ```bash
 aws s3 ls s3://onprem-sql-result-590184009554-ap-northeast-1/
 # → 2026-02-22 00:27:30        549 test-9e68af4f.json
@@ -75,14 +80,14 @@ aws s3 ls s3://onprem-sql-result-590184009554-ap-northeast-1/
 
 ### ✅ 全テスト成功
 
-| ステップ | 結果 | 詳細 |
-|---------|------|------|
-| **SQS メッセージ送信** | ✅ PASS | MessageId: 39d0e9c9-6185-426c-b27d-da47bf4b2796 |
-| **オンプレエージェント受信** | ✅ PASS | ログ: "[test-9e68af4f] メッセージ処理開始" |
-| **SQL バリデーション** | ✅ PASS | WHERE + MK_DATE BETWEEN で OK |
-| **モック Oracle 実行** | ✅ PASS | ダミーデータ 3 行取得 (ORD-0001, ORD-0002, ORD-0003) |
-| **S3 保存** | ✅ PASS | test-9e68af4f.json (549 bytes) |
-| **メッセージ削除** | ✅ PASS | SQS からメッセージ削除完了 |
+| ステップ                     | 結果    | 詳細                                                 |
+| ---------------------------- | ------- | ---------------------------------------------------- |
+| **SQS メッセージ送信**       | ✅ PASS | MessageId: 39d0e9c9-6185-426c-b27d-da47bf4b2796      |
+| **オンプレエージェント受信** | ✅ PASS | ログ: "[test-9e68af4f] メッセージ処理開始"           |
+| **SQL バリデーション**       | ✅ PASS | WHERE + MK_DATE BETWEEN で OK                        |
+| **モック Oracle 実行**       | ✅ PASS | ダミーデータ 3 行取得 (ORD-0001, ORD-0002, ORD-0003) |
+| **S3 保存**                  | ✅ PASS | test-9e68af4f.json (549 bytes)                       |
+| **メッセージ削除**           | ✅ PASS | SQS からメッセージ削除完了                           |
 
 ---
 
@@ -137,7 +142,8 @@ aws s3 ls s3://onprem-sql-result-590184009554-ap-northeast-1/
 
 ### 2. 環境変数管理
 
-**改善**：`main.py` に `load_dotenv()` 追加  
+**改善**：`main.py` に `load_dotenv()` 追加
+
 ```python
 from dotenv import load_dotenv
 
@@ -147,6 +153,7 @@ def main() -> None:
 ```
 
 メリット：
+
 - 環境変数は自動で .env から読み込み
 - ハードコード不要
 - 本番・開発環境を簡単に切り替え可能
@@ -154,6 +161,7 @@ def main() -> None:
 ### 3. ログ可視化
 
 ログレベル INFO で処理フロー全体が可視化：
+
 - ✅ メッセージ受信
 - ✅ Oracle 接続
 - ✅ SQL 実行
