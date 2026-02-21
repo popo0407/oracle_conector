@@ -1,0 +1,33 @@
+# Node.js
+node_modules/
+dist/
+*.js.map
+*.d.ts
+
+# CDK
+cdk.out/
+*.staging.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# 環境変数（機密情報）
+.env
+*.env
+
+# ログ
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/

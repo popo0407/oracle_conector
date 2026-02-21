@@ -1,0 +1,22 @@
+[Unit]
+Description=OnPrem Oracle SQL Bridge Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oracle-agent
+WorkingDirectory=/opt/onprem-sql-bridge
+EnvironmentFile=/opt/onprem-sql-bridge/.env
+ExecStart=/opt/onprem-sql-bridge/venv/bin/python main.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/onprem-sql-bridge/stdout.log
+StandardError=append:/var/log/onprem-sql-bridge/stderr.log
+
+# Graceful shutdown に十分な時間を与える
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+{
+  "name": "request-sender",
+  "version": "1.0.0",
+  "description": "Lambda function to send SQL requests to on-premise agent via SQS",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/client-sqs": "^3.0.0"
+  }
+}
