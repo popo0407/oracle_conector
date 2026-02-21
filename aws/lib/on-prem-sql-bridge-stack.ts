@@ -43,6 +43,14 @@ export class OnPremSqlBridgeStack extends cdk.Stack {
     const allowedOnPremIp = this.node.tryGetContext("allowedOnPremIp") as string ?? "203.0.113.10/32";
     /** Lambda 実行ロールへ SQS 送信を許可するか（同一アカウント内利用時）*/
     const enableLambdaSender = (this.node.tryGetContext("enableLambdaSender") as string ?? "true") === "true";
+    /**
+     * モックモード
+     * true の場合: Lambda は IS_MOCK_MODE=true で起動。
+     * オンプレ側 Python エージェントも MOCK_MODE=true で起動すると
+     * Oracle に接続せずダミーデータを S3 に保存する。
+     * CDK deploy 時: --context mockMode=true を指定する。
+     */
+    const mockMode = (this.node.tryGetContext("mockMode") as string ?? "false") === "true";
 
     // ================================================================
     // ① KMS CMK
@@ -274,6 +282,8 @@ export class OnPremSqlBridgeStack extends cdk.Stack {
           RESPONSE_QUEUE_URL: this.responseQueue.queueUrl,
           RESULT_BUCKET: this.resultBucket.bucketName,
           REGION: region,
+          /** モックモード: Lambda からのリクエストはオンプレを通さず即レスポンスを確認できる */
+          IS_MOCK_MODE: mockMode ? "true" : "false",
         },
         timeout: cdk.Duration.seconds(30),
         memorySize: 128,

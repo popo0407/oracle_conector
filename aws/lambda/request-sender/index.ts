@@ -4,7 +4,7 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 
 const sqs = new SQSClient({ region: process.env.REGION ?? "ap-northeast-1" });
@@ -13,6 +13,8 @@ const s3 = new S3Client({ region: process.env.REGION ?? "ap-northeast-1" });
 const REQUEST_QUEUE_URL = process.env.REQUEST_QUEUE_URL!;
 const RESPONSE_QUEUE_URL = process.env.RESPONSE_QUEUE_URL!;
 const RESULT_BUCKET = process.env.RESULT_BUCKET!;
+/** IS_MOCK_MODE=true の場合、SQS/オンプレを経由せずダミーデータを S3 に直接保存する */
+const IS_MOCK_MODE = process.env.IS_MOCK_MODE === "true";
 
 /** Lambda イベント型定義 */
 interface SqlRequestEvent {
@@ -31,6 +33,49 @@ interface SqlResponsePayload {
   s3_key?: string;
   affected_rows?: number;
   error?: string;
+}
+
+/**
+ * モックモード用ダミーデータを生成して S3 に保存し、即レスポンスを返す。
+ * Oracle / SQS を経由しないため、AWS 接続のみの結合確認に使用できる。
+ */
+async function handleMockRequest(
+  requestId: string,
+  event: SqlRequestEvent,
+): Promise<object> {
+  const mockRows = [
+    { ORDER_ID: "ORD-MOCK-001", CUSTOMER_NAME: "Mock顧客A", AMOUNT: 12500, MK_DATE: "2025-01-10", STATUS: "COMPLETED", _mock: true },
+    { ORDER_ID: "ORD-MOCK-002", CUSTOMER_NAME: "Mock顧客B", AMOUNT: 87000, MK_DATE: "2025-01-15", STATUS: "PENDING",   _mock: true },
+    { ORDER_ID: "ORD-MOCK-003", CUSTOMER_NAME: "Mock顧客C", AMOUNT: 3200,  MK_DATE: "2025-01-28", STATUS: "COMPLETED", _mock: true },
+  ];
+
+  const s3Key = `${requestId}.json`;
+  const body = JSON.stringify(mockRows);
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: RESULT_BUCKET,
+      Key: s3Key,
+      Body: body,
+      ContentType: "application/json",
+      Metadata: {
+        "x-mock-mode": "true",
+        "x-request-id": requestId,
+        "x-sql": event.sql.slice(0, 200),
+      },
+    }),
+  );
+
+  console.log(`[MOCK][${requestId}] ダミーデータを S3 に保存しました: ${s3Key}`);
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      request_id: requestId,
+      mock_mode: true,
+      s3_key: s3Key,
+      result: mockRows,
+    }),
+  };
 }
 
 /**
@@ -103,6 +148,12 @@ export const handler = async (event: SqlRequestEvent) => {
   }
 
   const requestId = randomUUID();
+
+  // モックモード: Oracle/SQS を経由せず S3 にダミーデータを直接保存
+  if (IS_MOCK_MODE) {
+    console.warn(`[MOCK MODE] IS_MOCK_MODE=true のため Oracle には問い合わせません。`);
+    return handleMockRequest(requestId, event);
+  }
 
   // ① SQS にリクエスト送信
   await sqs.send(

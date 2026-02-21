@@ -13,13 +13,17 @@
     "destroy": "cdk destroy"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/client-sqs": "^3.995.0",
     "@types/aws-lambda": "^8.10.145",
     "@types/node": "^22.0.0",
+    "@types/source-map-support": "^0.5.10",
     "aws-cdk": "^2.175.0",
     "typescript": "~5.7.0"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.175.0",
-    "constructs": "^10.4.2"
+    "constructs": "^10.4.2",
+    "source-map-support": "^0.5.21"
   }
 }

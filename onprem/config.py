@@ -56,6 +56,9 @@ class Config:
     # クエリ結果の最大バイト数（デフォルト 8 MB）
     max_result_bytes: int = 8 * 1024 * 1024
 
+    # モックモード（True の場合 Oracle に接続せずダミーデータを返す）
+    mock_mode: bool = False
+
 
 def load_config() -> Config:
     """環境変数から Config を生成して返す。"""
@@ -78,4 +81,5 @@ def load_config() -> Config:
         session_refresh_buffer_min=int(_optional("SESSION_REFRESH_BUFFER_MIN", "5")),
         sqs_wait_time_seconds=int(_optional("SQS_WAIT_TIME_SECONDS", "10")),
         max_result_bytes=int(_optional("MAX_RESULT_BYTES", str(8 * 1024 * 1024))),
+        mock_mode=_optional("MOCK_MODE", "false").lower() in ("true", "1", "yes"),
     )

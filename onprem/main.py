@@ -32,6 +32,7 @@ from botocore.exceptions import ClientError
 
 from aws_client import AwsClientManager
 from config import load_config
+from mock_oracle import MockOracleClient
 from oracle_client import OracleClient
 from sql_validator import SqlValidationError, get_sql_type, validate
 
@@ -223,17 +224,27 @@ def main() -> None:
     # 設定読み込み
     cfg = load_config()
     logger.info(
-        "設定ロード完了: region=%s, request_queue=%s",
+        "設定ロード完了: region=%s, request_queue=%s, mock_mode=%s",
         cfg.aws_region,
         cfg.request_queue_url,
+        cfg.mock_mode,
     )
 
     # AWS クライアント初期化（AssumeRole）
     aws = AwsClientManager(cfg)
     aws.refresh_if_needed()
 
-    # Oracle 接続
-    oracle = OracleClient(cfg)
+    # Oracle 接続（モックモードでは MockOracleClient を使用）
+    if cfg.mock_mode:
+        logger.warning("=" * 60)
+        logger.warning("【MOCK MODE 有効】Oracle には接続しません。")
+        logger.warning("ダミーデータが S3 に保存されます。")
+        logger.warning("本番投入前に MOCK_MODE=false に変更してください。")
+        logger.warning("=" * 60)
+        oracle: OracleClient | MockOracleClient = MockOracleClient()
+    else:
+        oracle = OracleClient(cfg)
+
     oracle.connect()
 
     logger.info("起動完了。SQS ポーリングを開始します...")

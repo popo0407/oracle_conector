@@ -17,13 +17,14 @@ AWS 側（CDK TypeScript）とオンプレミス側（Python）をゼロから�
 
 #### AWS 側 (`aws/`)
 
-| ファイル | 内容 |
-|---|---|
-| `bin/app.ts` | CDK エントリーポイント。環境変数からアカウント/リージョンを注入。 |
+| ファイル                          | 内容                                                                |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `bin/app.ts`                      | CDK エントリーポイント。環境変数からアカウント/リージョンを注入。   |
 | `lib/on-prem-sql-bridge-stack.ts` | KMS/S3/SQS/DLQ/SNS/IAM/Lambda/CloudWatch を定義するメインスタック。 |
-| `lambda/request-sender/index.ts` | SQS 送信 + レスポンスポーリング + S3 取得を行う Lambda 関数。 |
+| `lambda/request-sender/index.ts`  | SQS 送信 + レスポンスポーリング + S3 取得を行う Lambda 関数。       |
 
 設計書に沿い以下を追加実装：
+
 - `kms:ViaService` を `s3` と `sqs` 両方に拡張（参考コードは S3 のみだった）
 - `DenyNonSsl` ステートメントで HTTPS 強制
 - CloudWatch アラーム（DLQ 増加 / キュー滞留）
@@ -32,13 +33,13 @@ AWS 側（CDK TypeScript）とオンプレミス側（Python）をゼロから�
 
 #### オンプレ側 (`onprem/`)
 
-| ファイル | 内容 |
-|---|---|
-| `config.py` | 環境変数から `Config` dataclass を生成。必須項目未設定で即 ValueError。 |
-| `aws_client.py` | `AwsClientManager` クラスでセッション自動更新・プロキシ設定を一元管理。 |
-| `oracle_client.py` | `OracleClient` クラスで ODBC 接続・再接続・execute_select/execute_dml を担当。 |
+| ファイル           | 内容                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `config.py`        | 環境変数から `Config` dataclass を生成。必須項目未設定で即 ValueError。                   |
+| `aws_client.py`    | `AwsClientManager` クラスでセッション自動更新・プロキシ設定を一元管理。                   |
+| `oracle_client.py` | `OracleClient` クラスで ODBC 接続・再接続・execute_select/execute_dml を担当。            |
 | `sql_validator.py` | SELECT: WHERE + MK_DATE BETWEEN 必須。DML: サブクエリ禁止。危険キーワードブラックリスト。 |
-| `main.py` | シグナルハンドラ、SQS ポーリングループ、エラーハンドリング、SNS 通知、Graceful shutdown。 |
+| `main.py`          | シグナルハンドラ、SQS ポーリングループ、エラーハンドリング、SNS 通知、Graceful shutdown。 |
 
 ---
 

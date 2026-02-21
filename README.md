@@ -92,24 +92,35 @@ npx cdk deploy
 
 ### CDK コンテキスト変数
 
-| 変数名 | 説明 | デフォルト |
-|---|---|---|
-| `allowedOnPremIp` | SQS IP 制限に使用するオンプレ固定 IP | `203.0.113.10/32` |
-| `enableLambdaSender` | Lambda リクエスト送信機能を有効化 | `true` |
+| 変数名               | 説明                                                                    | デフォルト        |
+| -------------------- | ----------------------------------------------------------------------- | ----------------- |
+| `allowedOnPremIp`    | SQS IP 制限に使用するオンプレ固定 IP                                    | `203.0.113.10/32` |
+| `enableLambdaSender` | Lambda リクエスト送信機能を有効化                                       | `true`            |
+| `mockMode`           | **モックモード**（Lambda が Oracle を経由せずダミーデータを S3 に保存） | `false`           |
 
 ```bash
+# 本番デプロイ
 npx cdk deploy --context allowedOnPremIp=<YOUR_IP>/32
+
+# モードモードでデプロイ（Oracle 不要で AWS 疎通確認のみ）
+npx cdk deploy --context mockMode=true
 ```
+
+> **モックモードの切り替え方法**
+>
+> - **Lambda 側**: CDK コンテキスト `mockMode=true/false` で `IS_MOCK_MODE` 環境変数を切り替え
+> - **オンプレ側**: `.env` の `MOCK_MODE=true/false` で切り替え
+> - モック時は S3 にダミーデータが保存されるため、AWS 接続・IAM・S3 書き込みの疎通確認が可能
 
 ### デプロイ後に確認する出力値
 
-| 出力キー | 用途 |
-|---|---|
-| `RequestQueueUrl` | オンプレ側 `REQUEST_QUEUE_URL` に設定 |
+| 出力キー           | 用途                                   |
+| ------------------ | -------------------------------------- |
+| `RequestQueueUrl`  | オンプレ側 `REQUEST_QUEUE_URL` に設定  |
 | `ResponseQueueUrl` | オンプレ側 `RESPONSE_QUEUE_URL` に設定 |
-| `ResultBucketName` | オンプレ側 `RESULT_BUCKET` に設定 |
-| `OnPremRoleArn` | オンプレ側 `ROLE_ARN` に設定 |
-| `AlertTopicArn` | オンプレ側 `ALERT_TOPIC_ARN` に設定 |
+| `ResultBucketName` | オンプレ側 `RESULT_BUCKET` に設定      |
+| `OnPremRoleArn`    | オンプレ側 `ROLE_ARN` に設定           |
+| `AlertTopicArn`    | オンプレ側 `ALERT_TOPIC_ARN` に設定    |
 
 ---
 
@@ -171,53 +182,56 @@ sudo systemctl status onprem-sql-bridge
 }
 ```
 
-| フィールド | 必須 | 説明 |
-|---|---|---|
-| `id` | ✅ | UUID 等の一意識別子 |
-| `sql` | ✅ | 実行する SQL 文 |
-| `tns` | ✅ | 接続先 Oracle TNS 名 |
-| `app_id` | ✅ | ホワイトリスト登録済みアプリ ID |
+| フィールド | 必須 | 説明                            |
+| ---------- | ---- | ------------------------------- |
+| `id`       | ✅   | UUID 等の一意識別子             |
+| `sql`      | ✅   | 実行する SQL 文                 |
+| `tns`      | ✅   | 接続先 Oracle TNS 名            |
+| `app_id`   | ✅   | ホワイトリスト登録済みアプリ ID |
 
 ### レスポンス（Response Queue）
 
 **SELECT 成功時:**
+
 ```json
-{"id": "550e8400-...", "s3_key": "550e8400-....json"}
+{ "id": "550e8400-...", "s3_key": "550e8400-....json" }
 ```
 
 **DML 成功時:**
+
 ```json
-{"id": "550e8400-...", "affected_rows": 1}
+{ "id": "550e8400-...", "affected_rows": 1 }
 ```
 
 **エラー時:**
+
 ```json
-{"id": "550e8400-...", "error": "エラーメッセージ"}
+{ "id": "550e8400-...", "error": "エラーメッセージ" }
 ```
 
 ---
 
 ## SQL 制約
 
-| 種別 | 制約 |
-|---|---|
-| SELECT | `WHERE` 句と `MK_DATE BETWEEN` 指定が必須 |
-| INSERT / UPDATE | 影響行数が 1 行のみ許可 |
-| DELETE / DROP 等 | 一切禁止 |
+| 種別             | 制約                                      |
+| ---------------- | ----------------------------------------- |
+| SELECT           | `WHERE` 句と `MK_DATE BETWEEN` 指定が必須 |
+| INSERT / UPDATE  | 影響行数が 1 行のみ許可                   |
+| DELETE / DROP 等 | 一切禁止                                  |
 
 ---
 
 ## セキュリティ設計
 
-| 項目 | 実装内容 |
-|---|---|
-| 認証 | STS AssumeRole（短期クレデンシャル、1時間） |
-| 暗号化 | KMS CMK（`kms:ViaService` で S3/SQS 経由のみ許可） |
-| 転送暗号化 | S3・SQS ともに HTTPS 強制（`DenyNonSsl`） |
-| ネットワーク | SQS キューポリシーでオンプレ固定 IP のみ許可 |
-| 最小権限 | IAM ロールは必要アクションのみ許可 |
-| データ保持 | S3 Lifecycle 7日後自動削除 |
-| 障害通知 | DLQ 増加・キュー滞留で SNS アラート |
+| 項目         | 実装内容                                           |
+| ------------ | -------------------------------------------------- |
+| 認証         | STS AssumeRole（短期クレデンシャル、1時間）        |
+| 暗号化       | KMS CMK（`kms:ViaService` で S3/SQS 経由のみ許可） |
+| 転送暗号化   | S3・SQS ともに HTTPS 強制（`DenyNonSsl`）          |
+| ネットワーク | SQS キューポリシーでオンプレ固定 IP のみ許可       |
+| 最小権限     | IAM ロールは必要アクションのみ許可                 |
+| データ保持   | S3 Lifecycle 7日後自動削除                         |
+| 障害通知     | DLQ 増加・キュー滞留で SNS アラート                |
 
 ---
 
