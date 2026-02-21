@@ -90,17 +90,18 @@ Lambda もテストサンプルを追加（フル統合は今後）。
 
 ### テスト実装完了
 
-| テストモジュール | テスト数 | 状況 | 内容 |
-|---|---|---|---|
-| `test_config.py` | 6 | ✅ 全成功 | 環境変数読み込み・デフォルト値・型変換 |
-| `test_sql_validator.py` | 19 | ✅ 全成功 | SELECT WHERE/MK_DATE・DML サブクエリ・危険キーワード拒否 |
-| `test_mock_oracle.py` | 12 | ✅ 全成功 | ダミーデータ生成・タイムスタンプ・整合性 |
-| `test_aws_client.py` | 6 | ✅ 全成功 | 初期化・Config 保持・セッション期限判定 |
-| **合計** | **43** | ✅ 全成功 | **実行時間 0.67s** |
+| テストモジュール        | テスト数 | 状況      | 内容                                                     |
+| ----------------------- | -------- | --------- | -------------------------------------------------------- |
+| `test_config.py`        | 6        | ✅ 全成功 | 環境変数読み込み・デフォルト値・型変換                   |
+| `test_sql_validator.py` | 19       | ✅ 全成功 | SELECT WHERE/MK_DATE・DML サブクエリ・危険キーワード拒否 |
+| `test_mock_oracle.py`   | 12       | ✅ 全成功 | ダミーデータ生成・タイムスタンプ・整合性                 |
+| `test_aws_client.py`    | 6        | ✅ 全成功 | 初期化・Config 保持・セッション期限判定                  |
+| **合計**                | **43**   | ✅ 全成功 | **実行時間 0.67s**                                       |
 
 ### テスト内容ハイライト
 
 **SQL バリデーション (19 テスト)**
+
 - ✅ SELECT に WHERE・MK_DATE・BETWEEN 必須
 - ✅ INSERT/UPDATE のサブクエリ禁止
 - ✅ DROP/DELETE/TRUNCATE/ALTER/EXECUTE 等を自動拒否
@@ -108,13 +109,15 @@ Lambda もテストサンプルを追加（フル統合は今後）。
 - ✅ 複数条件・インラインコメント対応
 
 **モック Oracle (12 テスト)**
+
 - ✅ connect() / is_alive() 呼び出し
 - ✅ execute_select() でダミーデータ 3 行返却
 - ✅ execute_dml() で affected_rows=1 返却
-- ✅ _mock, _executed_at フィールド付加
+- ✅ \_mock, \_executed_at フィールド付加
 - ✅ rollback() / close() エラーなし
 
 **Config 管理 (6 テスト)**
+
 - ✅ 必須フィールド未設定で ValueError
 - ✅ MOCK_MODE・ALLOWED_APP_IDS パース
 - ✅ 数値環境変数の型変換
@@ -138,4 +141,3 @@ python -m pytest --cov       # カバレッジ測定（オプション）
 
 - 今後の機能追加（env 変数追加・SQL 制約追加等）があれば、対応テストを同時作成する。
 - ユニットテストで検出できない統合レベルは、Lambda + 実オンプレ環境でのテストで対応。
-

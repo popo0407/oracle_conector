@@ -28,6 +28,7 @@ import sys
 import time
 from typing import Any
 
+from dotenv import load_dotenv
 from botocore.exceptions import ClientError
 
 from aws_client import AwsClientManager
@@ -220,6 +221,9 @@ def _send_error_response(
 
 def main() -> None:
     logger.info("OnPrem SQL ブリッジ エージェントを起動します。")
+
+    # .env ファイルから環境変数を読み込む
+    load_dotenv()
 
     # 設定読み込み
     cfg = load_config()
