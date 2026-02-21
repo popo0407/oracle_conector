@@ -78,3 +78,64 @@ AWS 側（CDK TypeScript）とオンプレミス側（Python）をゼロから�
 - 🔧 Oracle パスワードを環境変数から AWS Secrets Manager に移行
 - ✨ Lambda からのレスポンス受信を SQS ポーリングではなく EventBridge Pipes に変更検討
 - 🚀 オンプレ側の Python バージョン管理とパッケージ署名検証（pip hash）の導入
+
+---
+
+## 2026-02-22 — ユニットテスト実装・全テスト成功
+
+### アプローチ
+
+Python モジュール（config / sql_validator / mock_oracle / aws_client）を単体テストし、実装の正確性を検証。
+Lambda もテストサンプルを追加（フル統合は今後）。
+
+### テスト実装完了
+
+| テストモジュール | テスト数 | 状況 | 内容 |
+|---|---|---|---|
+| `test_config.py` | 6 | ✅ 全成功 | 環境変数読み込み・デフォルト値・型変換 |
+| `test_sql_validator.py` | 19 | ✅ 全成功 | SELECT WHERE/MK_DATE・DML サブクエリ・危険キーワード拒否 |
+| `test_mock_oracle.py` | 12 | ✅ 全成功 | ダミーデータ生成・タイムスタンプ・整合性 |
+| `test_aws_client.py` | 6 | ✅ 全成功 | 初期化・Config 保持・セッション期限判定 |
+| **合計** | **43** | ✅ 全成功 | **実行時間 0.67s** |
+
+### テスト内容ハイライト
+
+**SQL バリデーション (19 テスト)**
+- ✅ SELECT に WHERE・MK_DATE・BETWEEN 必須
+- ✅ INSERT/UPDATE のサブクエリ禁止
+- ✅ DROP/DELETE/TRUNCATE/ALTER/EXECUTE 等を自動拒否
+- ✅ 大文字小文字を区別しない
+- ✅ 複数条件・インラインコメント対応
+
+**モック Oracle (12 テスト)**
+- ✅ connect() / is_alive() 呼び出し
+- ✅ execute_select() でダミーデータ 3 行返却
+- ✅ execute_dml() で affected_rows=1 返却
+- ✅ _mock, _executed_at フィールド付加
+- ✅ rollback() / close() エラーなし
+
+**Config 管理 (6 テスト)**
+- ✅ 必須フィールド未設定で ValueError
+- ✅ MOCK_MODE・ALLOWED_APP_IDS パース
+- ✅ 数値環境変数の型変換
+
+### テスト実行コマンド
+
+```bash
+cd onprem
+python -m pytest -v          # 詳細表示
+python -m pytest -q          # サマリー表示
+python -m pytest --cov       # カバレッジ測定（オプション）
+```
+
+### 改善点
+
+- 単体テストにより、実装ロジックの正確性が確認できた。
+- 危険キーワードの正規表現マッチング、環境変数パーサーの動作が検証された。
+- テスト作成時にエッジケース（空 SQL・コメント・数値パース等）を洗い出した。
+
+### 再発防止策
+
+- 今後の機能追加（env 変数追加・SQL 制約追加等）があれば、対応テストを同時作成する。
+- ユニットテストで検出できない統合レベルは、Lambda + 実オンプレ環境でのテストで対応。
+
